@@ -49,11 +49,16 @@ jobs:
       - name: Commit known issues
         # Only commit if there are changes (new issues detected)
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add data/known_issues.json 2>/dev/null || true
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update known issues [skip ci]"
-          git push
+          if [ -f data/known_issues.json ]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add data/known_issues.json
+            git diff --staged --quiet || git commit -m "Update known issues [skip ci]"
+            git push
+            echo "✅ Known issues committed"
+          else
+            echo "⚠️ No known_issues.json file to commit"
+          fi
 
       - name: Monitor Summary
         if: always()
