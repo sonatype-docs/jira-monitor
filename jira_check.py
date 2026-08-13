@@ -81,9 +81,14 @@ class JiraMonitor:
             return self.get_issues_from_board()
 
     def get_issues_from_board(self) -> List[Dict[str, Any]]:
-        """Fallback: Fetch issues from board using Agile API."""
+        """Fallback: Fetch recently updated CLM/NEXUS issues from board using Agile API."""
         url = f"{JIRA_BASE_URL}/rest/agile/1.0/board/{BOARD_ID}/issue"
+
+        # Use JQL to filter for last 7 days and CLM/NEXUS projects
+        jql = '(project = CLM OR project = NEXUS) AND updated >= -7d ORDER BY updated DESC'
+
         params = {
+            "jql": jql,
             "fields": "key,summary,status,priority,assignee,created,updated,issuetype",
             "maxResults": 100
         }
@@ -91,7 +96,11 @@ class JiraMonitor:
         try:
             response = self.session.get(url, params=params)
             if response.status_code == 200:
-                return response.json().get("issues", [])
+                issues = response.json().get("issues", [])
+                print(f"📅 Found {len(issues)} CLM/NEXUS tickets updated in last 7 days")
+                return issues
+            else:
+                print(f"Board API failed: {response.status_code}")
         except Exception as e:
             print(f"Error fetching board issues: {e}")
 
