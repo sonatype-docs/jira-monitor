@@ -76,13 +76,25 @@ class JiraMonitor:
         return []
 
     def detect_new_issues(self, issues: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Identify new issues not in known_issues."""
+        """Identify new issues not in known_issues, filtered by allowed prefixes."""
+        # Only monitor CLM-* and NEXUS-* tickets
+        ALLOWED_PREFIXES = ("CLM-", "NEXUS-")
+
         new_issues = []
+        filtered_issues = []
+
+        # Filter issues by allowed prefixes
+        for issue in issues:
+            issue_key = issue.get("key", "")
+            if issue_key.startswith(ALLOWED_PREFIXES):
+                filtered_issues.append(issue)
+
+        print(f"📊 Filtered: {len(filtered_issues)} CLM/NEXUS tickets out of {len(issues)} total")
 
         # First run ever - populate known issues without notification
         if not self.known_issues:
             print("🆕 First run - populating known issues without notification")
-            for issue in issues:
+            for issue in filtered_issues:
                 issue_key = issue.get("key")
                 if issue_key:
                     self.known_issues.add(issue_key)
@@ -91,7 +103,7 @@ class JiraMonitor:
             return []  # Return empty to avoid flooding notifications
 
         # Subsequent runs - detect truly new issues
-        for issue in issues:
+        for issue in filtered_issues:
             issue_key = issue.get("key")
             if issue_key and issue_key not in self.known_issues:
                 new_issues.append(issue)
