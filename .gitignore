@@ -1,8 +1,8 @@
 # Environment variables (contains credentials)
 .env
 
-# Known issues storage (auto-generated)
-data/
+# Known issues storage (auto-generated, but track the directory)
+data/known_issues.json
 known_issues.json
 
 # Python
