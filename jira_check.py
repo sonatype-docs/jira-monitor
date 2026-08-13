@@ -54,9 +54,33 @@ class JiraMonitor:
             }, f, indent=2)
 
     def get_issues_from_filter(self) -> List[Dict[str, Any]]:
-        """Fetch issues from the board backlog directly."""
-        # Try board API first (more reliable)
-        return self.get_issues_from_board()
+        """Fetch issues updated in the last 7 days from the board."""
+        # Use JQL to get only recently updated issues
+        # This matches the "Updated Last 7 days" filter in Jira
+        search_url = f"{JIRA_BASE_URL}/rest/api/3/search"
+
+        # JQL: Project = SDS AND updated >= -7d (updated in last 7 days)
+        # Order by updated date descending to see newest first
+        jql = f'project = {PROJECT_KEY} AND updated >= -7d ORDER BY updated DESC'
+
+        params = {
+            "jql": jql,
+            "fields": "key,summary,status,priority,assignee,created,updated,issuetype,description",
+            "maxResults": 100
+        }
+
+        try:
+            response = self.session.get(search_url, params=params)
+            if response.status_code == 200:
+                issues = response.json().get("issues", [])
+                print(f"📅 Found {len(issues)} tickets updated in last 7 days")
+                return issues
+            else:
+                print(f"Search failed: {response.status_code}, trying board API")
+                return self.get_issues_from_board()
+        except Exception as e:
+            print(f"Error fetching issues: {e}, trying board API")
+            return self.get_issues_from_board()
 
     def get_issues_from_board(self) -> List[Dict[str, Any]]:
         """Fallback: Fetch issues from board using Agile API."""
