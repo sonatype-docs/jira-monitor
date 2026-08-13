@@ -1,0 +1,54 @@
+name: Test Jira Monitor
+
+on:
+  workflow_dispatch:  # Manual trigger only for testing
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Test API Connection
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          python -c "
+          import os
+          import requests
+
+          email = os.getenv('JIRA_EMAIL')
+          token = os.getenv('JIRA_API_TOKEN')
+
+          if not email or not token:
+              print('❌ Credentials not set')
+              exit(1)
+
+          session = requests.Session()
+          session.auth = (email, token)
+
+          # Test authentication
+          resp = session.get('https://sonatype.atlassian.net/rest/api/3/myself')
+
+          if resp.status_code == 200:
+              user = resp.json()
+              print(f'✅ Authenticated as: {user.get(\"displayName\")}')
+              print(f'   Email: {user.get(\"emailAddress\")}')
+          else:
+              print(f'❌ Authentication failed: {resp.status_code}')
+              print(resp.text)
+              exit(1)
+          "
