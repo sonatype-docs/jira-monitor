@@ -54,36 +54,9 @@ class JiraMonitor:
             }, f, indent=2)
 
     def get_issues_from_filter(self) -> List[Dict[str, Any]]:
-        """Fetch issues using the custom filter."""
-        filter_url = f"{JIRA_BASE_URL}/rest/api/3/filter/{CUSTOM_FILTER_ID}"
-
-        try:
-            filter_response = self.session.get(filter_url)
-
-            if filter_response.status_code == 200:
-                filter_data = filter_response.json()
-                jql = filter_data.get("jql", "")
-                print(f"Using filter JQL: {jql}")
-
-                search_url = f"{JIRA_BASE_URL}/rest/api/3/search"
-                params = {
-                    "jql": jql,
-                    "fields": "key,summary,status,priority,assignee,created,updated,issuetype,description",
-                    "maxResults": 100
-                }
-                search_response = self.session.get(search_url, params=params)
-
-                if search_response.status_code == 200:
-                    return search_response.json().get("issues", [])
-                else:
-                    print(f"Search failed: {search_response.status_code}")
-            else:
-                # Fallback: try board API
-                return self.get_issues_from_board()
-        except Exception as e:
-            print(f"Error fetching issues: {e}")
-
-        return []
+        """Fetch issues from the board backlog directly."""
+        # Try board API first (more reliable)
+        return self.get_issues_from_board()
 
     def get_issues_from_board(self) -> List[Dict[str, Any]]:
         """Fallback: Fetch issues from board using Agile API."""
@@ -105,6 +78,19 @@ class JiraMonitor:
     def detect_new_issues(self, issues: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Identify new issues not in known_issues."""
         new_issues = []
+
+        # First run ever - populate known issues without notification
+        if not self.known_issues:
+            print("🆕 First run - populating known issues without notification")
+            for issue in issues:
+                issue_key = issue.get("key")
+                if issue_key:
+                    self.known_issues.add(issue_key)
+            if self.known_issues:
+                self._save_known_issues()
+            return []  # Return empty to avoid flooding notifications
+
+        # Subsequent runs - detect truly new issues
         for issue in issues:
             issue_key = issue.get("key")
             if issue_key and issue_key not in self.known_issues:
