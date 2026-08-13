@@ -1,9 +1,12 @@
 # Environment variables (contains credentials)
 .env
 
-# Known issues storage (auto-generated, but track the directory)
-data/known_issues.json
-known_issues.json
+# Known issues storage (tracked by git for persistence)
+# We DO want to commit this file so data persists across runs
+# data/known_issues.json is intentionally NOT ignored
+
+# Environment variables
+.env
 
 # Python
 __pycache__/
