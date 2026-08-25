@@ -1,9 +1,9 @@
 name: Jira Board Monitor
 
 on:
-  # Run every 5 minutes
+  # Run every 2 minutes for better coverage
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes, 24/7
+    - cron: '*/2 * * * *'  # Every 2 minutes, 24/7
 
   # Allow manual trigger
   workflow_dispatch:
